@@ -1,27 +1,6 @@
-import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-client';
-import { createSupabaseClient } from '../lib/supabase.js';
+import { supabase, createSupabaseClient } from '../lib/supabase.js';
 
-// JWKS client for Supabase
-const client = jwksClient({
-  jwksUri: `${process.env.SUPABASE_URL}/rest/v1/auth/jwks`,
-  cache: true,
-  cacheMaxEntries: 5,
-  cacheMaxAge: 600000, // 10 minutes
-});
-
-// Get signing key from JWKS
-const getKey = (header, callback) => {
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) {
-      return callback(err);
-    }
-    const signingKey = key.publicKey || key.rsaPublicKey;
-    callback(null, signingKey);
-  });
-};
-
-// JWT verification middleware
+// JWT verification middleware using Supabase
 export const authenticateJWT = async (request, reply) => {
   try {
     const authHeader = request.headers.authorization;
@@ -35,34 +14,30 @@ export const authenticateJWT = async (request, reply) => {
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Verify JWT token
-    const decoded = await new Promise((resolve, reject) => {
-      jwt.verify(token, getKey, {
-        issuer: `${process.env.SUPABASE_URL}`,
-        audience: 'authenticated',
-        algorithms: ['RS256']
-      }, (err, decoded) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(decoded);
-        }
+    // Use Supabase to verify the token and get user info
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      request.log.error('JWT verification failed:', error);
+      return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Invalid or expired token'
       });
-    });
+    }
 
     // Extract user information
-    const user = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role || 'authenticated',
-      aud: decoded.aud
+    const userInfo = {
+      id: user.id,
+      email: user.email,
+      role: user.role || 'authenticated',
+      aud: user.aud
     };
 
     // Create Supabase client with user context
     const supabaseClient = createSupabaseClient(token);
 
     // Attach user and client to request
-    request.user = user;
+    request.user = userInfo;
     request.supabase = supabaseClient;
 
     return;
@@ -87,34 +62,28 @@ export const optionalAuth = async (request, reply) => {
 
     const token = authHeader.substring(7);
 
-    // Verify JWT token
-    const decoded = await new Promise((resolve, reject) => {
-      jwt.verify(token, getKey, {
-        issuer: `${process.env.SUPABASE_URL}`,
-        audience: 'authenticated',
-        algorithms: ['RS256']
-      }, (err, decoded) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(decoded);
-        }
-      });
-    });
+    // Use Supabase to verify the token and get user info
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      // Token is invalid, but we don't fail the request
+      request.log.warn('Optional JWT verification failed:', error);
+      return;
+    }
 
     // Extract user information
-    const user = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role || 'authenticated',
-      aud: decoded.aud
+    const userInfo = {
+      id: user.id,
+      email: user.email,
+      role: user.role || 'authenticated',
+      aud: user.aud
     };
 
     // Create Supabase client with user context
     const supabaseClient = createSupabaseClient(token);
 
     // Attach user and client to request
-    request.user = user;
+    request.user = userInfo;
     request.supabase = supabaseClient;
 
     return;

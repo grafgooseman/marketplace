@@ -71,6 +71,23 @@ fastify.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
+// Root route - API information
+fastify.get('/', async (request, reply) => {
+  return {
+    name: 'Goose Exchange API',
+    version: '1.0.0',
+    description: 'Backend API for Airsoft Marketplace',
+    endpoints: {
+      health: '/health',
+      docs: '/docs',
+      auth: '/api/auth',
+      ads: '/api/ads',
+      users: '/api/users'
+    },
+    timestamp: new Date().toISOString()
+  };
+});
+
 // Register authentication middleware
 fastify.decorate('authenticateJWT', authenticateJWT);
 fastify.decorate('optionalAuth', optionalAuth);

@@ -17,7 +17,7 @@ export default function Footer() {
             <p className="text-sm text-muted-foreground">
               The premier marketplace for airsoft enthusiasts. Buy, sell, and trade airsoft gear with confidence.
             </p>
-            <div className="flex space-x-4">
+            {/* <div className="flex space-x-4">
               <Link href="#" className="text-muted-foreground hover:text-primary">
                 <Facebook className="h-5 w-5" />
               </Link>
@@ -27,7 +27,7 @@ export default function Footer() {
               <Link href="#" className="text-muted-foreground hover:text-primary">
                 <Instagram className="h-5 w-5" />
               </Link>
-            </div>
+            </div> */}
           </div>
 
           {/* Quick Links */}
@@ -90,15 +90,15 @@ export default function Footer() {
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>support@gooseexchange.com</span>
+                <span>artem@artembuilds.com</span>
               </div>
-              <div className="flex items-center space-x-2">
+              {/* <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
                 <span>+1 (555) 123-4567</span>
-              </div>
+              </div> */}
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
-                <span>123 Airsoft St, Gaming City</span>
+                <span>Toronto, Canada</span>
               </div>
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function Footer() {
 
         <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
           <p>
-            &copy; 2024 Goose Exchange. All rights reserved. |
+            &copy; 2025 Goose Exchange. All rights reserved. |
             <Link href="#" className="hover:text-primary ml-1">
               Privacy Policy
             </Link>{" "}
