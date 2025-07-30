@@ -288,7 +288,11 @@ class ApiClient {
     const requestId = Math.random().toString(36).substr(2, 9);
     console.log(`API: [${requestId}] Calling getAd for ID:`, id);
     
-    const response = await this.request<{ ad: Ad }>(`/api/ads/${id}`);
+    const response = await this.request<{ ad: Ad }>(`/api/ads/${id}`, {
+      headers: {
+        'X-Request-ID': requestId
+      }
+    });
     
     console.log(`API: [${requestId}] getAd raw response:`, response);
     console.log(`API: [${requestId}] getAd ad data:`, (response as any).ad);
