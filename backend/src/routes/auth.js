@@ -266,17 +266,54 @@ export async function authRoutes(fastify, options) {
     preHandler: fastify.authenticateJWT
   }, async (request, reply) => {
     try {
-      const { data: { user }, error } = await request.supabase.auth.getUser();
+      // Get the token from the Authorization header
+      const token = request.headers.authorization.substring(7); // Remove 'Bearer ' prefix
+      
+      // Use the global supabase instance to get user data with the token
+      const { data: { user }, error } = await supabase.auth.getUser(token);
 
       if (error) {
+        console.log('Profile endpoint - Supabase error:', error);
         return reply.status(400).send({
           error: 'Failed to get user profile',
           message: error.message
         });
       }
 
+      if (!user) {
+        console.log('Profile endpoint - No user returned from Supabase');
+        return reply.status(401).send({
+          error: 'User not found',
+          message: 'No user associated with this token'
+        });
+      }
+
+      console.log('Profile endpoint - Raw user from Supabase:', user);
+      console.log('Profile endpoint - User metadata:', user.user_metadata);
+
+      // Create a clean user object similar to login response
+      const cleanUser = {
+        id: user.id,
+        email: user.email,
+        aud: user.aud,
+        role: user.role,
+        email_confirmed_at: user.email_confirmed_at,
+        phone: user.phone,
+        phone_confirmed_at: user.phone_confirmed_at,
+        confirmed_at: user.confirmed_at,
+        last_sign_in_at: user.last_sign_in_at,
+        app_metadata: user.app_metadata,
+        user_metadata: user.user_metadata,
+        identities: user.identities,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        is_anonymous: user.is_anonymous
+      };
+
+      console.log('Profile endpoint - Clean user being returned:', cleanUser);
+
       return reply.send({
-        user
+        user: cleanUser
       });
     } catch (error) {
       fastify.log.error('Get profile error:', error);

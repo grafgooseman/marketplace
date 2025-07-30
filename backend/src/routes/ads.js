@@ -38,7 +38,7 @@ export async function adsRoutes(fastify, options) {
 
       let query = supabase
         .from('ads')
-        .select('*, profiles(full_name, avatar_url)', { count: 'exact' });
+        .select('*', { count: 'exact' });
 
       // Apply filters
       if (category) {
@@ -109,7 +109,7 @@ export async function adsRoutes(fastify, options) {
 
       const { data: ad, error } = await supabase
         .from('ads')
-        .select('*, profiles(full_name, avatar_url)')
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -138,16 +138,16 @@ export async function adsRoutes(fastify, options) {
       security: [{ Bearer: [] }],
       body: {
         type: 'object',
-        required: ['title', 'description', 'price', 'category'],
+        required: ['title', 'description', 'price'],
         properties: {
           title: { type: 'string', minLength: 1, maxLength: 100 },
           description: { type: 'string', minLength: 1, maxLength: 1000 },
           price: { type: 'number', minimum: 0 },
-          category: { type: 'string' },
-          condition: { type: 'string', enum: ['new', 'like_new', 'good', 'fair', 'poor'] },
-          images: { type: 'array', items: { type: 'string' } },
+          image: { type: 'string' },
           location: { type: 'string' },
-          contact_info: { type: 'object' }
+          seller: { type: 'string' },
+          rating: { type: 'number', minimum: 0, maximum: 5 },
+          is_favorite: { type: 'boolean' }
         }
       },
       response: {
@@ -162,7 +162,7 @@ export async function adsRoutes(fastify, options) {
     preHandler: authenticateJWT
   }, async (request, reply) => {
     try {
-      const { title, description, price, category, condition, images, location, contact_info } = request.body;
+      const { title, description, price, image, location, seller, rating, is_favorite } = request.body;
       const userId = request.user.id;
 
       const { data: ad, error } = await request.supabase
@@ -171,11 +171,11 @@ export async function adsRoutes(fastify, options) {
           title,
           description,
           price,
-          category,
-          condition,
-          images,
+          image,
           location,
-          contact_info,
+          seller,
+          rating,
+          is_favorite: is_favorite || false,
           user_id: userId,
           status: 'active'
         })
@@ -221,11 +221,11 @@ export async function adsRoutes(fastify, options) {
           title: { type: 'string', minLength: 1, maxLength: 100 },
           description: { type: 'string', minLength: 1, maxLength: 1000 },
           price: { type: 'number', minimum: 0 },
-          category: { type: 'string' },
-          condition: { type: 'string', enum: ['new', 'like_new', 'good', 'fair', 'poor'] },
-          images: { type: 'array', items: { type: 'string' } },
+          image: { type: 'string' },
           location: { type: 'string' },
-          contact_info: { type: 'object' },
+          seller: { type: 'string' },
+          rating: { type: 'number', minimum: 0, maximum: 5 },
+          is_favorite: { type: 'boolean' },
           status: { type: 'string', enum: ['active', 'sold', 'inactive'] }
         }
       },

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { withAuth } from "@/contexts/AuthContext"
+import { useState, useEffect } from "react"
+import { withAuth, useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,14 +14,103 @@ import { Camera, Star, Package, Heart } from "lucide-react"
 
 
 function ProfilePage() {
+  const { user, updateUser, loading } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    email: "john@example.com",
+    name: "",
+    email: "",
     phone: "",
     location: "",
     bio: "",
   })
+  const [dataLoaded, setDataLoaded] = useState(false)
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Profile Page - Auth State:', { user, loading })
+    if (user) {
+      console.log('User object:', user)
+      console.log('User metadata:', user.user_metadata)
+    }
+  }, [user, loading])
+
+  // Initialize form data when user data is available
+  useEffect(() => {
+    if (user && !loading) {
+      console.log('Setting form data from user:', user)
+      const userData = {
+        name: user.user_metadata?.full_name || "",
+        email: user.email || "",
+        phone: user.user_metadata?.phone || "",
+        location: "", // Not available in current user schema, keeping as empty
+        bio: "", // Not available in current user schema, keeping as empty
+      }
+      console.log('Form data being set:', userData)
+      setFormData(userData)
+      setDataLoaded(true)
+    }
+  }, [user, loading])
+
+  const handleSave = async () => {
+    if (!user) return
+
+    try {
+      setIsSaving(true)
+      await updateUser({
+        email: formData.email,
+        user_metadata: {
+          full_name: formData.name,
+          phone: formData.phone,
+          // Note: location and bio are not currently supported by the backend
+          // but we keep them in the form for potential future use
+        }
+      })
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+      // You might want to show an error toast here
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    // Reset form data to original user data
+    if (user) {
+      setFormData({
+        name: user.user_metadata?.full_name || "",
+        email: user.email || "",
+        phone: user.user_metadata?.phone || "",
+        location: "",
+        bio: "",
+      })
+    }
+    setIsEditing(false)
+  }
+
+  // Get user initials for avatar fallback
+  const getUserInitials = (name?: string, email?: string) => {
+    if (name && name.trim()) {
+      return name.trim().split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    }
+    if (email) {
+      return email.slice(0, 2).toUpperCase()
+    }
+    return 'U'
+  }
+
+  // Get display name - prefer full name, fallback to email username, then Anonymous
+  const getDisplayName = () => {
+    if (formData.name && formData.name.trim()) {
+      return formData.name.trim()
+    }
+    if (formData.email) {
+      const emailUsername = formData.email.split('@')[0]
+      return emailUsername || "User"
+    }
+    return "User"
+  }
 
   const myAds = [
     {
@@ -51,6 +140,24 @@ function ProfilePage() {
     },
   ]
 
+  // Show loading until we have user data loaded
+  if (loading || !user || !dataLoaded) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading your profile...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 container mx-auto px-4 py-8">
@@ -58,8 +165,10 @@ function ProfilePage() {
           <div className="flex items-center space-x-4 mb-8">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src="/placeholder.svg" alt="John Doe" />
-                <AvatarFallback className="text-2xl">JD</AvatarFallback>
+                <AvatarImage src={user.user_metadata?.avatar_url} alt={getDisplayName()} />
+                <AvatarFallback className="text-2xl">
+                  {getUserInitials(formData.name, formData.email)}
+                </AvatarFallback>
               </Avatar>
               <Button
                 size="icon"
@@ -70,8 +179,8 @@ function ProfilePage() {
               </Button>
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold">John Doe</h1>
-              <p className="text-muted-foreground">john@example.com</p>
+              <h1 className="text-3xl font-bold">{getDisplayName()}</h1>
+              <p className="text-muted-foreground">{formData.email}</p>
               <div className="flex items-center space-x-4 mt-2">
                 <Badge variant="secondary">
                   <Star className="h-3 w-3 mr-1" />
@@ -80,7 +189,11 @@ function ProfilePage() {
                 <Badge variant="outline">Member since 2023</Badge>
               </div>
             </div>
-            <Button onClick={() => setIsEditing(!isEditing)} variant={isEditing ? "outline" : "default"}>
+            <Button 
+              onClick={() => isEditing ? handleCancel() : setIsEditing(true)} 
+              variant={isEditing ? "outline" : "default"}
+              disabled={isSaving}
+            >
               {isEditing ? "Cancel" : "Edit Profile"}
             </Button>
           </div>
@@ -108,6 +221,7 @@ function ProfilePage() {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         disabled={!isEditing}
+                        placeholder="Enter your full name"
                       />
                     </div>
                     <div className="space-y-2">
@@ -156,8 +270,10 @@ function ProfilePage() {
                   </div>
                   {isEditing && (
                     <div className="flex space-x-2">
-                      <Button onClick={() => setIsEditing(false)}>Save Changes</Button>
-                      <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? "Saving..." : "Save Changes"}
+                      </Button>
+                      <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                         Cancel
                       </Button>
                     </div>

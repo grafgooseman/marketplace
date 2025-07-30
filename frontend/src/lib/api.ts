@@ -23,6 +23,22 @@ interface User {
   };
 }
 
+interface Ad {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  image?: string;
+  location?: string;
+  seller?: string;
+  rating?: number;
+  is_favorite?: boolean;
+  status: 'active' | 'sold' | 'inactive';
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface Session {
   access_token: string;
   refresh_token: string;
@@ -237,6 +253,89 @@ class ApiClient {
     return response.user;
   }
 
+  // Ads API methods
+  async getAds(params?: {
+    category?: string;
+    price_min?: number;
+    price_max?: number;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ ads: Ad[]; total: number; page: number; limit: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.price_min) queryParams.append('price_min', params.price_min.toString());
+    if (params?.price_max) queryParams.append('price_max', params.price_max.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const endpoint = `/api/ads${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.request<{ ads: Ad[]; total: number; page: number; limit: number }>(endpoint);
+    return response;
+  }
+
+  async getAd(id: string): Promise<Ad> {
+    const response = await this.request<{ ad: Ad }>(`/api/ads/${id}`);
+    return response.ad;
+  }
+
+  async createAd(data: {
+    title: string;
+    description: string;
+    price: number;
+    image?: string;
+    location?: string;
+    seller?: string;
+    rating?: number;
+    is_favorite?: boolean;
+  }): Promise<Ad> {
+    const response = await this.request<{ ad: Ad }>('/api/ads', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.ad;
+  }
+
+  async updateAd(id: string, data: Partial<{
+    title: string;
+    description: string;
+    price: number;
+    image: string;
+    location: string;
+    seller: string;
+    rating: number;
+    is_favorite: boolean;
+    status: 'active' | 'sold' | 'inactive';
+  }>): Promise<Ad> {
+    const response = await this.request<{ ad: Ad }>(`/api/ads/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.ad;
+  }
+
+  async deleteAd(id: string): Promise<void> {
+    await this.request(`/api/ads/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getUserAds(params?: {
+    status?: 'active' | 'sold' | 'inactive';
+    page?: number;
+    limit?: number;
+  }): Promise<{ ads: Ad[]; total: number; page: number; limit: number }> {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const endpoint = `/api/ads/my/ads${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.request<{ ads: Ad[]; total: number; page: number; limit: number }>(endpoint);
+    return response;
+  }
+
   private async refreshToken(): Promise<boolean> {
     try {
       const refreshToken = localStorage.getItem('refresh_token');
@@ -293,4 +392,4 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 // Export types for use in components
-export type { User, Session, ApiResponse }; 
+export type { User, Session, ApiResponse, Ad }; 
