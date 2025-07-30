@@ -1,11 +1,14 @@
+"use client"
+
 import { Input } from "@/components/ui/input"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight, Heart, MoreHorizontal, Star, MessageCircle, Phone, MapPin } from "lucide-react"
-import ads from "@/data/ads.json"
+import { apiClient, type Ad } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useState, useEffect } from "react"
 
 type AdPageProps = {
   params: {
@@ -14,17 +17,58 @@ type AdPageProps = {
 }
 
 export default function AdPage({ params }: AdPageProps) {
-  const adId = Number.parseInt(params.id, 10)
-  const ad = ads.find((a) => a.id === adId)
+  const [ad, setAd] = useState<Ad | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [relatedAds, setRelatedAds] = useState<Ad[]>([])
 
-  if (!ad) {
+  useEffect(() => {
+    const loadAd = async () => {
+      try {
+        setLoading(true)
+        
+        // Load the specific ad
+        const adData = await apiClient.getAd(params.id)
+        setAd(adData)
+        
+        // Load related ads for the image gallery
+        const relatedResponse = await apiClient.getAds({ limit: 8 })
+        setRelatedAds(relatedResponse.ads.filter(relatedAd => relatedAd.id !== params.id))
+        
+        setError(null)
+      } catch (err) {
+        console.error('Failed to load ad:', err)
+        setError('Failed to load ad details.')
+        setAd(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAd()
+  }, [params.id])
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading ad details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state or not found
+  if (error || !ad) {
     notFound()
   }
 
   // Mock data based on the reference image
   const seller = {
-    name: "John Doe",
-    rating: 4.8,
+    name: ad.seller || "Anonymous Seller",
+    rating: ad.rating || 4.5,
     reviews: 15,
     status: "Private Seller",
     responseTime: "Responds in about an hour",
@@ -69,7 +113,7 @@ export default function AdPage({ params }: AdPageProps) {
 
               {/* Image Gallery */}
               <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 mb-8">
-                {[ad.image, ...ads.slice(0, 7).map((a) => a.image)].map((img, index) => (
+                {[ad.image, ...relatedAds.slice(0, 7).map((a) => a.image)].map((img, index) => (
                   <div
                     key={index}
                     className={`relative aspect-square rounded-md overflow-hidden cursor-pointer ${index === 0 ? "ring-2 ring-primary ring-offset-2" : ""}`}
@@ -105,7 +149,7 @@ export default function AdPage({ params }: AdPageProps) {
               {/* Ad Info */}
               <div className="text-xs text-muted-foreground">
                 <p>
-                  Ad #{ad.id} &middot; Posted today &middot; {Math.floor(Math.random() * 100)} views
+                  Ad #{ad.id.slice(-8)} &middot; Posted {new Date(ad.created_at).toLocaleDateString()} &middot; {Math.floor(Math.random() * 100)} views
                 </p>
                 <Link href="#" className="hover:text-primary hover:underline mt-2 inline-block">
                   Report this ad
