@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, User, Calendar } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,11 +31,15 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">G</span>
-            </div>
+        <Link href="/" className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3">
+            <Image
+              src="/logo.png"
+              alt="Goose Exchange Logo"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
             <span className="font-bold text-xl text-foreground">Goose Exchange</span>
           </div>
         </Link>

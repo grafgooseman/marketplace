@@ -167,22 +167,19 @@ export function AdPageContent({ adId, initialData }: AdPageContentProps) {
                 <Image src={ad.image || "/placeholder.svg"} alt={ad.title} fill className="object-cover" />
               </div>
 
-              {/* Image Gallery */}
-              <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 mb-8">
-                {[ad.image, ...relatedAds.slice(0, 7).map((a) => a.image)].map((img, index) => (
-                  <div
-                    key={index}
-                    className={`relative aspect-square rounded-md overflow-hidden cursor-pointer ${index === 0 ? "ring-2 ring-primary ring-offset-2" : ""}`}
-                  >
+              {/* Image Gallery - Show only current ad's image */}
+              {ad.image && (
+                <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 mb-8">
+                  <div className="relative aspect-square rounded-md overflow-hidden cursor-pointer ring-2 ring-primary ring-offset-2">
                     <Image
-                      src={img || "/placeholder.svg"}
-                      alt={`Thumbnail ${index + 1}`}
+                      src={ad.image}
+                      alt={`${ad.title} thumbnail`}
                       fill
                       className="object-cover"
                     />
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
 
               {/* Location */}
               <div className="mb-8">
