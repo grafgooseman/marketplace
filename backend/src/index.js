@@ -83,11 +83,6 @@ await fastify.register(swaggerUi, {
   }
 });
 
-// Handle preflight OPTIONS requests globally
-fastify.options('*', async (request, reply) => {
-  return reply.status(204).send();
-});
-
 // Health check route
 fastify.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };
