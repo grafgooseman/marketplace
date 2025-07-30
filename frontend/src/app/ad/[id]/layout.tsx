@@ -9,40 +9,9 @@ type AdLayoutProps = {
   }
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const adId = Number.parseInt(params.id, 10)
-  const ad = ads.find((a) => a.id === adId)
-
-  if (!ad) {
-    return {
-      title: "Ad Not Found | Goose Exchange",
-      description: "The requested airsoft ad could not be found.",
-    }
-  }
-
-  return {
-    title: `${ad.title} - $${ad.price} | Goose Exchange`,
-    description: ad.description,
-    openGraph: {
-      title: `${ad.title} - $${ad.price}`,
-      description: ad.description,
-      type: "website",
-      images: [
-        {
-          url: ad.image,
-          width: 1200,
-          height: 630,
-          alt: ad.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${ad.title} - $${ad.price}`,
-      description: ad.description,
-      images: [ad.image],
-    },
-  }
+export const metadata: Metadata = {
+  title: "Ad Details - Goose Exchange",
+  description: "View airsoft gear details and specifications.",
 }
 
 export default function AdLayout({ children, params }: AdLayoutProps) {

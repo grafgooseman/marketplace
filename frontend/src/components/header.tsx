@@ -42,23 +42,23 @@ export default function Header() {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4 flex-1 max-w-2xl mx-8">
           {/* Search Bar - Prominent */}
-          <div className="relative flex-1">
+          {/* <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="search"
               placeholder="Search airsoft gear, guns, accessories..."
               className="pl-10 pr-4 h-12 text-base bg-muted/50 border-2 border-muted focus:border-primary focus:bg-background transition-all duration-200"
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-2">
           {/* Mobile Search Button */}
-          <Button variant="ghost" size="icon" className="md:hidden">
+          {/* <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-5 w-5" />
             <span className="sr-only">Search</span>
-          </Button>
+          </Button> */}
 
           {/* Events Button */}
           <Button variant="ghost" size="sm" className="hidden sm:flex items-center space-x-2">
@@ -83,9 +83,9 @@ export default function Header() {
                   <div className="relative">
                     <User className="h-5 w-5" />
                     {/* Messages notification badge */}
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-500">
+                    {/* <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-500">
                       3
-                    </Badge>
+                    </Badge> */}
                   </div>
                   <ChevronDown className="h-3 w-3 opacity-50" />
                   <span className="sr-only">Account menu</span>
@@ -103,7 +103,7 @@ export default function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                {/* <DropdownMenuItem className="cursor-pointer">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center">
                       <MessageCircle className="mr-2 h-4 w-4" />
@@ -121,8 +121,8 @@ export default function Header() {
                 <DropdownMenuItem className="cursor-pointer">
                   <Heart className="mr-2 h-4 w-4" />
                   <span>My Wishlist</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                </DropdownMenuItem> */}
+                {/* <DropdownMenuSeparator /> */}
                 <Link href="/profile">
                   <DropdownMenuItem className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
@@ -155,7 +155,7 @@ export default function Header() {
       </div>
 
       {/* Mobile Search Bar */}
-      <div className="md:hidden px-4 pb-4">
+      {/* <div className="md:hidden px-4 pb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -164,7 +164,7 @@ export default function Header() {
             className="pl-10 pr-4 h-11 bg-muted/50 border-2 border-muted focus:border-primary focus:bg-background transition-all duration-200"
           />
         </div>
-      </div>
+      </div> */}
     </header>
   )
 }

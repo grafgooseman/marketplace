@@ -43,6 +43,12 @@ export default function MarketplaceMain() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
   const [sortBy, setSortBy] = useState("relevance")
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Applied filters (only updated when Search button is clicked)
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("")
+  const [appliedPriceRange, setAppliedPriceRange] = useState<[number, number]>([0, 1000])
+  const [appliedSortBy, setAppliedSortBy] = useState("relevance")
+  
   const [ads, setAds] = useState<Ad[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -53,19 +59,19 @@ export default function MarketplaceMain() {
       try {
         setLoading(true)
         const response = await apiClient.getAds({
-          search: searchQuery || undefined,
-          price_min: priceRange[0],
-          price_max: priceRange[1],
+          search: appliedSearchQuery || undefined,
+          // category: selectedCategories.length > 0 ? selectedCategories : undefined, // Disabled until DB column added
+          price_min: appliedPriceRange[0],
+          price_max: appliedPriceRange[1],
+          sort: appliedSortBy,
           limit: 50 // Get more ads for better filtering
         })
         
         // Transform the data to match the expected format
         const transformedAds = response.ads.map(ad => ({
           ...ad,
-          // Convert price from string to number for compatibility
-          price: typeof ad.price === 'string' ? ad.price : ad.price.toString(),
-          // Map database fields to expected frontend fields
-          isFavorite: ad.is_favorite || false
+          // Ensure price is a number
+          price: typeof ad.price === 'string' ? parseFloat(ad.price) : ad.price
         }))
         
         setAds(transformedAds)
@@ -80,7 +86,7 @@ export default function MarketplaceMain() {
     }
 
     loadAds()
-  }, [searchQuery, priceRange])
+  }, [appliedSearchQuery, appliedPriceRange, appliedSortBy]) // Only trigger when Search button is clicked
 
   const handleCategoryChange = (categoryId: string, checked: boolean) => {
     setSelectedCategories(prev => 
@@ -92,6 +98,12 @@ export default function MarketplaceMain() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
+  }
+
+  const handleApplyFilters = () => {
+    setAppliedSearchQuery(searchQuery)
+    setAppliedPriceRange(priceRange)
+    setAppliedSortBy(sortBy)
   }
 
   // Show loading state
@@ -136,7 +148,82 @@ export default function MarketplaceMain() {
                 <SheetHeader>
                   <SheetTitle>Filters</SheetTitle>
                 </SheetHeader>
-                {/* Filter content would go here - same as desktop */}
+                <div className="space-y-6 mt-6">
+                  {/* Search */}
+                  <div>
+                    <h3 className="font-semibold mb-3">Search</h3>
+                    <Input 
+                      placeholder="Search ads..." 
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Categories - Temporarily disabled until database column is added */}
+                  {/* <div>
+                    <h3 className="font-semibold mb-3">Categories</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {categories.map((category) => (
+                        <div key={category.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`mobile-${category.id}`}
+                            checked={selectedCategories.includes(category.id)}
+                            onCheckedChange={(checked) => handleCategoryChange(category.id, checked as boolean)}
+                          />
+                          <Label htmlFor={`mobile-${category.id}`} className="text-sm font-normal cursor-pointer">
+                            {category.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div> */}
+
+                  {/* Price Range */}
+                  <div>
+                    <h3 className="font-semibold mb-3">Price Range</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={priceRange[0]}
+                          onChange={(e) => setPriceRange([Number(e.target.value), priceRange[1]])}
+                          className="w-20"
+                        />
+                        <span>-</span>
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={priceRange[1]}
+                          onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
+                          className="w-20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sort */}
+                  <div>
+                    <h3 className="font-semibold mb-3">Sort By</h3>
+                    <RadioGroup value={sortBy} onValueChange={setSortBy}>
+                      {sortOptions.map((option) => (
+                        <div key={option.id} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option.id} id={`mobile-${option.id}`} />
+                          <Label htmlFor={`mobile-${option.id}`} className="text-sm font-normal cursor-pointer">
+                            {option.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+
+                  {/* Search Button */}
+                  <div>
+                    <Button onClick={handleApplyFilters} className="w-full">
+                      Search
+                    </Button>
+                  </div>
+                </div>
               </SheetContent>
             </Sheet>
           </div>
@@ -153,8 +240,8 @@ export default function MarketplaceMain() {
               />
             </div>
 
-            {/* Categories */}
-            <div>
+            {/* Categories - Temporarily disabled until database column is added */}
+            {/* <div>
               <h3 className="font-semibold mb-3">Categories</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {categories.map((category) => (
@@ -170,7 +257,7 @@ export default function MarketplaceMain() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Price Range */}
             <div>
@@ -210,6 +297,13 @@ export default function MarketplaceMain() {
                 ))}
               </RadioGroup>
             </div>
+
+            {/* Search Button */}
+            <div>
+              <Button onClick={handleApplyFilters} className="w-full">
+                Search
+              </Button>
+            </div>
           </div>
         </aside>
 
@@ -231,9 +325,9 @@ export default function MarketplaceMain() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`absolute top-2 right-2 h-8 w-8 bg-background/60 hover:bg-background/80 ${ad.isFavorite ? "text-red-500" : "text-gray-400"}`}
+                          className={`absolute top-2 right-2 h-8 w-8 bg-background/60 hover:bg-background/80 ${ad.is_favorite ? "text-red-500" : "text-gray-400"}`}
                         >
-                          <Heart className={`h-4 w-4 ${ad.isFavorite ? "fill-current" : ""}`} />
+                          <Heart className={`h-4 w-4 ${ad.is_favorite ? "fill-current" : ""}`} />
                         </Button>
                       </div>
                       {/* Content */}

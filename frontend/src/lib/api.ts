@@ -99,6 +99,7 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     
     const config: RequestInit = {
+      method: 'GET', // Default to GET if not specified
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -114,13 +115,14 @@ class ApiClient {
       };
     }
 
-    // Debug: Log what we're sending
+    // Debug logging
     console.log('Request URL:', url);
     console.log('Request method:', config.method);
     console.log('Request headers:', config.headers);
     console.log('Request body:', config.body);
     console.log('Request body type:', typeof config.body);
-    console.log('Request body length:', config.body ? config.body.length : 'no body');
+    console.log('Request body length:', config.body ? 'has body' : 'no body');
+    console.log('Request ID from headers:', config.headers?.['X-Request-ID'] || 'none');
 
     try {
       const response = await fetch(url, config);
@@ -255,18 +257,25 @@ class ApiClient {
 
   // Ads API methods
   async getAds(params?: {
-    category?: string;
+    category?: string | string[];
     price_min?: number;
     price_max?: number;
     search?: string;
+    sort?: string;
     page?: number;
     limit?: number;
   }): Promise<{ ads: Ad[]; total: number; page: number; limit: number }> {
     const queryParams = new URLSearchParams();
-    if (params?.category) queryParams.append('category', params.category);
+    if (params?.category) {
+      const categoryParam = Array.isArray(params.category) 
+        ? params.category.join(',') 
+        : params.category;
+      queryParams.append('category', categoryParam);
+    }
     if (params?.price_min) queryParams.append('price_min', params.price_min.toString());
     if (params?.price_max) queryParams.append('price_max', params.price_max.toString());
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.sort) queryParams.append('sort', params.sort);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
@@ -276,8 +285,31 @@ class ApiClient {
   }
 
   async getAd(id: string): Promise<Ad> {
-    const response = await this.request<{ ad: Ad }>(`/api/ads/${id}`);
-    return response.ad;
+    const requestId = Math.random().toString(36).substr(2, 9);
+    console.log(`API: [${requestId}] Calling getAd for ID:`, id);
+    
+    const response = await this.request<{ ad: Ad }>(`/api/ads/${id}`, {
+      headers: {
+        'X-Request-ID': requestId
+      }
+    });
+    
+    console.log(`API: [${requestId}] getAd raw response:`, response);
+    console.log(`API: [${requestId}] getAd ad data:`, response.ad);
+    
+    // Handle different response formats
+    if (response.ad) {
+      return response.ad;
+    } else if (response.data) {
+      // In case the response is wrapped in a data property
+      return (response as any).data;
+    } else if (response.id) {
+      // In case the ad is returned directly
+      return response as any;
+    } else {
+      console.error(`API: [${requestId}] Unexpected response format:`, response);
+      throw new Error('Invalid response format from getAd');
+    }
   }
 
   async createAd(data: {
