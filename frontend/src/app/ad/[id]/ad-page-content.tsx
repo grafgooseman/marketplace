@@ -5,7 +5,7 @@ import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight, Heart, MoreHorizontal, Star, MessageCircle, Phone, MapPin } from "lucide-react"
-import { apiClient, type Ad } from "@/lib/api"
+import { apiClient, type Ad, API_BASE_URL } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,7 +32,7 @@ export function AdPageContent({ adId, initialData }: AdPageContentProps) {
           
           // ISOLATED TEST: Try fetching with unique headers to avoid interference
           console.log('Client: Testing isolated fetch...')
-          const isolatedResponse = await fetch(`http://localhost:3001/api/ads/${adId}`, {
+          const isolatedResponse = await fetch(`${API_BASE_URL}/api/ads/${adId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export function AdPageContent({ adId, initialData }: AdPageContentProps) {
           
           // DIRECT TEST: Try fetching with a simple fetch call
           console.log('Client: Testing direct fetch...')
-          const directResponse = await fetch(`http://localhost:3001/api/ads/${adId}`)
+          const directResponse = await fetch(`${API_BASE_URL}/api/ads/${adId}`)
           const directData = await directResponse.json()
           console.log('Client: Direct fetch response:', directData)
           console.log('Client: Direct fetch ad data:', directData.ad)
