@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { withAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,10 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Camera, Star, Package, Heart } from "lucide-react"
-import Header from "../../header"
-import Footer from "../../components/footer"
 
-export default function ProfilePage() {
+
+function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     name: "John Doe",
@@ -53,7 +53,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center space-x-4 mb-8">
@@ -273,7 +272,8 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </main>
-      <Footer />
     </div>
   )
 }
+
+export default withAuth(ProfilePage)

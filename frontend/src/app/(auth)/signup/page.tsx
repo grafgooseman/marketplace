@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function SignupPage() {
   const [firstName, setFirstName] = useState("")
@@ -19,6 +20,48 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const { register } = useAuth()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Validation
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long")
+      return
+    }
+
+    if (!agreeToTerms) {
+      setError("Please agree to the terms and conditions")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const fullName = `${firstName} ${lastName}`.trim()
+      await register(email, password, { full_name: fullName })
+      // Navigation is handled in the register function
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -47,7 +90,15 @@ export default function SignupPage() {
             <CardDescription className="text-center">Join the airsoft community today</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form className="space-y-4">
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
@@ -156,8 +207,15 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <Button type="button" className="w-full h-11">
-                Create Account
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </form>
 

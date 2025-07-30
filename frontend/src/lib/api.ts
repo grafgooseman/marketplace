@@ -1,0 +1,296 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface ApiResponse<T = any> {
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  expires_in: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    full_name?: string;
+    phone?: string;
+    avatar_url?: string;
+  };
+}
+
+interface Session {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  expires_in: number;
+  user: User;
+}
+
+class ApiClient {
+  private baseURL: string;
+  private accessToken: string | null = null;
+
+  constructor(baseURL: string = API_BASE_URL) {
+    this.baseURL = baseURL;
+    this.loadTokenFromStorage();
+  }
+
+  private loadTokenFromStorage() {
+    if (typeof window !== 'undefined') {
+      this.accessToken = localStorage.getItem('access_token');
+    }
+  }
+
+  private saveTokenToStorage(tokens: AuthTokens) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('access_token', tokens.access_token);
+      localStorage.setItem('refresh_token', tokens.refresh_token);
+      
+      // Handle expires_at - calculate from expires_in if not provided
+      let expiresAt = tokens.expires_at;
+      if (!expiresAt && tokens.expires_in) {
+        // Calculate expires_at from current time + expires_in (in seconds)
+        expiresAt = Math.floor(Date.now() / 1000) + tokens.expires_in;
+      }
+      
+      if (expiresAt) {
+        localStorage.setItem('expires_at', expiresAt.toString());
+      }
+      
+      // Update internal token reference
+      this.accessToken = tokens.access_token;
+    }
+  }
+
+  private removeTokenFromStorage() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('expires_at');
+      this.accessToken = null;
+    }
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    // Add authorization header if token exists
+    if (this.accessToken) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${this.accessToken}`,
+      };
+    }
+
+    // Debug: Log what we're sending
+    console.log('Request URL:', url);
+    console.log('Request method:', config.method);
+    console.log('Request headers:', config.headers);
+    console.log('Request body:', config.body);
+    console.log('Request body type:', typeof config.body);
+    console.log('Request body length:', config.body ? config.body.length : 'no body');
+
+    try {
+      const response = await fetch(url, config);
+      
+      // Debug: Log the raw response
+      console.log('Raw HTTP response status:', response.status);
+      console.log('Raw HTTP response headers:', [...response.headers.entries()]);
+      
+      // Clone the response so we can read it twice (once for logging, once for parsing)
+      const responseClone = response.clone();
+      const rawText = await responseClone.text();
+      console.log('Raw HTTP response body:', rawText);
+      
+      const data = await response.json();
+      console.log('Parsed JSON data:', data);
+
+      if (!response.ok) {
+        // Handle token expiration
+        if (response.status === 401 && this.accessToken) {
+          const refreshed = await this.refreshToken();
+          if (refreshed) {
+            // Retry the original request with new token
+            return this.request<T>(endpoint, options);
+          } else {
+            // Refresh failed, redirect to login
+            this.removeTokenFromStorage();
+            throw new Error('Session expired. Please login again.');
+          }
+        }
+
+        throw new Error(data.message || `HTTP Error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Authentication methods
+  async login(email: string, password: string): Promise<{ user: User; session: Session }> {
+    const response = await this.request<{ user: User; session: Session }>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    console.log('Frontend received response:', response);
+    console.log('Response session:', response.session);
+
+    if (response.session) {
+      console.log('Session properties:', Object.keys(response.session));
+      console.log('access_token value:', response.session.access_token);
+      console.log('refresh_token value:', response.session.refresh_token);
+
+      // Try different possible property names that Supabase might use
+      const accessToken = response.session.access_token || response.session.accessToken || response.session.token;
+      const refreshToken = response.session.refresh_token || response.session.refreshToken;
+      const expiresIn = response.session.expires_in || response.session.expiresIn || 3600;
+      const expiresAt = response.session.expires_at || response.session.expiresAt;
+      
+      console.log('Extracted values:', { accessToken, refreshToken, expiresIn, expiresAt });
+
+      // Create a safe token object with fallbacks
+      const tokenData = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_at: expiresAt || 0,
+        expires_in: expiresIn,
+      };
+      
+      console.log('Final tokenData being saved:', tokenData);
+      
+      this.saveTokenToStorage(tokenData);
+    } else {
+      console.log('No session in response!');
+    }
+
+    return response;
+  }
+
+  async register(
+    email: string,
+    password: string,
+    user_metadata?: { full_name?: string; phone?: string }
+  ): Promise<{ user: User; session: Session | null }> {
+    const response = await this.request<{ user: User; session: Session | null }>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, user_metadata }),
+    });
+
+    if (response.session) {
+      // Create a safe token object with fallbacks
+      const tokenData = {
+        access_token: response.session.access_token,
+        refresh_token: response.session.refresh_token,
+        expires_at: response.session.expires_at || 0,
+        expires_in: response.session.expires_in || 3600, // Default to 1 hour
+      };
+      
+      this.saveTokenToStorage(tokenData);
+    }
+
+    return response;
+  }
+
+  async logout(): Promise<void> {
+    try {
+      await this.request('/api/auth/logout', {
+        method: 'POST',
+      });
+    } finally {
+      this.removeTokenFromStorage();
+    }
+  }
+
+  async getCurrentUser(): Promise<User> {
+    const response = await this.request<{ user: User }>('/api/auth/profile');
+    return response.user;
+  }
+
+  async updateProfile(data: {
+    email?: string;
+    user_metadata?: { full_name?: string; phone?: string; avatar_url?: string };
+  }): Promise<User> {
+    const response = await this.request<{ user: User }>('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.user;
+  }
+
+  private async refreshToken(): Promise<boolean> {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        return false;
+      }
+
+      const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const data = await response.json();
+      if (data.session) {
+        // Create a safe token object with fallbacks
+        const tokenData = {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at || 0,
+          expires_in: data.session.expires_in || 3600, // Default to 1 hour
+        };
+        
+        this.saveTokenToStorage(tokenData);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
+    }
+  }
+
+  // Utility method to check if user is authenticated
+  isAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false; // Server-side rendering
+    if (!this.accessToken) return false;
+    
+    const expiresAt = localStorage.getItem('expires_at');
+    if (!expiresAt) return false;
+    
+    return Date.now() < parseInt(expiresAt) * 1000;
+  }
+}
+
+// Create singleton instance
+export const apiClient = new ApiClient();
+
+// Export types for use in components
+export type { User, Session, ApiResponse }; 

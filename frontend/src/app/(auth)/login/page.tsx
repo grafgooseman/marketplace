@@ -7,12 +7,42 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const { login } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const message = searchParams.get('message')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!email || !password) {
+      setError("Please fill in all fields")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      await login(email, password)
+      // Navigation is handled in the login function
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please check your credentials.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
@@ -41,7 +71,22 @@ export default function LoginPage() {
             <CardDescription className="text-center">Sign in to your account to continue</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form className="space-y-4">
+            {/* Success message */}
+            {message && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
+                {message}
+              </div>
+            )}
+            
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -90,8 +135,15 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Button type="button" className="w-full h-11">
-                Sign In
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Signing In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 
