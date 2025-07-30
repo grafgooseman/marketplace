@@ -66,8 +66,14 @@ export async function adsRoutes(fastify, options) {
         });
       }
 
+      // Transform ads to include full image URLs
+      const transformedAds = ads?.map(ad => ({
+        ...ad,
+        image: ad.image ? `${process.env.SUPABASE_URL}/storage/v1/object/public/${ad.image}` : null
+      })) || [];
+
       return reply.send({
-        ads,
+        ads: transformedAds,
         total: count,
         page,
         limit
@@ -120,7 +126,13 @@ export async function adsRoutes(fastify, options) {
         });
       }
 
-      return reply.send({ ad });
+      // Transform ad to include full image URL
+      const transformedAd = ad ? {
+        ...ad,
+        image: ad.image ? `${process.env.SUPABASE_URL}/storage/v1/object/public/${ad.image}` : null
+      } : null;
+
+      return reply.send({ ad: transformedAd });
     } catch (error) {
       fastify.log.error('Get ad error:', error);
       return reply.status(500).send({

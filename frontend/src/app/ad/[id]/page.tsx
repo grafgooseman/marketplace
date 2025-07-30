@@ -21,6 +21,7 @@ export default function AdPage({ params }: AdPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [relatedAds, setRelatedAds] = useState<Ad[]>([])
+  const [viewCount, setViewCount] = useState<number | null>(null)
 
   useEffect(() => {
     const loadAd = async () => {
@@ -34,6 +35,9 @@ export default function AdPage({ params }: AdPageProps) {
         // Load related ads for the image gallery
         const relatedResponse = await apiClient.getAds({ limit: 8 })
         setRelatedAds(relatedResponse.ads.filter(relatedAd => relatedAd.id !== params.id))
+        
+        // Generate view count on client side only
+        setViewCount(Math.floor(Math.random() * 100) + 20)
         
         setError(null)
       } catch (err) {
@@ -149,7 +153,11 @@ export default function AdPage({ params }: AdPageProps) {
               {/* Ad Info */}
               <div className="text-xs text-muted-foreground">
                 <p>
-                  Ad #{ad.id.slice(-8)} &middot; Posted {new Date(ad.created_at).toLocaleDateString()} &middot; {Math.floor(Math.random() * 100)} views
+                  Ad #{ad.id.slice(-8)} &middot; Posted {new Date(ad.created_at).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })} &middot; {viewCount || '--'} views
                 </p>
                 <Link href="#" className="hover:text-primary hover:underline mt-2 inline-block">
                   Report this ad
