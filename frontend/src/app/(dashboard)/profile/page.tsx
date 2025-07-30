@@ -325,7 +325,7 @@ function ProfilePage() {
                     <Heart className="h-5 w-5 mr-2" />
                     Wishlist ({wishlistItems.length})
                   </CardTitle>
-                  <CardDescription>Items you're interested in buying</CardDescription>
+                  <CardDescription>Items you&apos;re interested in buying</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">

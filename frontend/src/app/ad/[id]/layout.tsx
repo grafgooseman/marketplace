@@ -4,9 +4,9 @@ import Footer from "@/components/footer"
 
 type AdLayoutProps = {
   children: React.ReactNode
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export const metadata: Metadata = {

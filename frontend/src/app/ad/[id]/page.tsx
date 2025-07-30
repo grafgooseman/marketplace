@@ -11,9 +11,9 @@ import { Metadata } from "next"
 import { AdPageContent } from "./ad-page-content"
 
 type AdPageProps = {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 // Server-side data fetching with better error handling

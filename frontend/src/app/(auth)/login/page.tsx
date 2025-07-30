@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,19 @@ import { Eye, EyeOff, ArrowLeft, AlertCircle } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
 
+function MessageDisplay() {
+  const searchParams = useSearchParams()
+  const message = searchParams.get('message')
+  
+  if (!message) return null
+  
+  return (
+    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
+      {message}
+    </div>
+  )
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -21,8 +34,6 @@ export default function LoginPage() {
   
   const { login } = useAuth()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const message = searchParams.get('message')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,11 +88,9 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Success message */}
-            {message && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
-                {message}
-              </div>
-            )}
+            <Suspense fallback={null}>
+              <MessageDisplay />
+            </Suspense>
             
             {/* Error message */}
             {error && (
@@ -184,7 +193,7 @@ export default function LoginPage() {
             </Button> */}
 
             <div className="text-center text-sm">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/signup" className="text-primary hover:underline font-medium">
                 Sign up
               </Link>

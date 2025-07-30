@@ -122,7 +122,7 @@ class ApiClient {
     console.log('Request body:', config.body);
     console.log('Request body type:', typeof config.body);
     console.log('Request body length:', config.body ? 'has body' : 'no body');
-    console.log('Request ID from headers:', config.headers?.['X-Request-ID'] || 'none');
+    console.log('Request ID from headers:', (config.headers as any)?.['X-Request-ID'] || 'none');
 
     try {
       const response = await fetch(url, config);
@@ -171,18 +171,18 @@ class ApiClient {
     });
 
     console.log('Frontend received response:', response);
-    console.log('Response session:', response.session);
+    console.log('Response session:', (response as any).session);
 
-    if (response.session) {
-      console.log('Session properties:', Object.keys(response.session));
-      console.log('access_token value:', response.session.access_token);
-      console.log('refresh_token value:', response.session.refresh_token);
+    if ((response as any).session) {
+      console.log('Session properties:', Object.keys((response as any).session));
+      console.log('access_token value:', (response as any).session.access_token);
+      console.log('refresh_token value:', (response as any).session.refresh_token);
 
       // Try different possible property names that Supabase might use
-      const accessToken = response.session.access_token || response.session.accessToken || response.session.token;
-      const refreshToken = response.session.refresh_token || response.session.refreshToken;
-      const expiresIn = response.session.expires_in || response.session.expiresIn || 3600;
-      const expiresAt = response.session.expires_at || response.session.expiresAt;
+      const accessToken = (response as any).session.access_token || (response as any).session.accessToken || (response as any).session.token;
+      const refreshToken = (response as any).session.refresh_token || (response as any).session.refreshToken;
+      const expiresIn = (response as any).session.expires_in || (response as any).session.expiresIn || 3600;
+      const expiresAt = (response as any).session.expires_at || (response as any).session.expiresAt;
       
       console.log('Extracted values:', { accessToken, refreshToken, expiresIn, expiresAt });
 
@@ -201,7 +201,7 @@ class ApiClient {
       console.log('No session in response!');
     }
 
-    return response;
+    return response as { user: User; session: Session };
   }
 
   async register(
@@ -214,19 +214,19 @@ class ApiClient {
       body: JSON.stringify({ email, password, user_metadata }),
     });
 
-    if (response.session) {
+    if ((response as any).session) {
       // Create a safe token object with fallbacks
       const tokenData = {
-        access_token: response.session.access_token,
-        refresh_token: response.session.refresh_token,
-        expires_at: response.session.expires_at || 0,
-        expires_in: response.session.expires_in || 3600, // Default to 1 hour
+        access_token: (response as any).session.access_token,
+        refresh_token: (response as any).session.refresh_token,
+        expires_at: (response as any).session.expires_at || 0,
+        expires_in: (response as any).session.expires_in || 3600, // Default to 1 hour
       };
       
       this.saveTokenToStorage(tokenData);
     }
 
-    return response;
+    return response as { user: User; session: Session | null };
   }
 
   async logout(): Promise<void> {
@@ -241,7 +241,7 @@ class ApiClient {
 
   async getCurrentUser(): Promise<User> {
     const response = await this.request<{ user: User }>('/api/auth/profile');
-    return response.user;
+    return (response as any).user;
   }
 
   async updateProfile(data: {
@@ -252,7 +252,7 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.user;
+    return (response as any).user;
   }
 
   // Ads API methods
@@ -281,7 +281,7 @@ class ApiClient {
 
     const endpoint = `/api/ads${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ ads: Ad[]; total: number; page: number; limit: number }>(endpoint);
-    return response;
+    return response as { ads: Ad[]; total: number; page: number; limit: number };
   }
 
   async getAd(id: string): Promise<Ad> {
@@ -295,15 +295,15 @@ class ApiClient {
     });
     
     console.log(`API: [${requestId}] getAd raw response:`, response);
-    console.log(`API: [${requestId}] getAd ad data:`, response.ad);
+    console.log(`API: [${requestId}] getAd ad data:`, (response as any).ad);
     
     // Handle different response formats
-    if (response.ad) {
-      return response.ad;
-    } else if (response.data) {
+    if ((response as any).ad) {
+      return (response as any).ad;
+    } else if ((response as any).data) {
       // In case the response is wrapped in a data property
       return (response as any).data;
-    } else if (response.id) {
+    } else if ((response as any).id) {
       // In case the ad is returned directly
       return response as any;
     } else {
@@ -326,7 +326,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response.ad;
+    return (response as any).ad;
   }
 
   async updateAd(id: string, data: Partial<{
@@ -344,7 +344,7 @@ class ApiClient {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.ad;
+    return (response as any).ad;
   }
 
   async deleteAd(id: string): Promise<void> {
@@ -365,7 +365,7 @@ class ApiClient {
 
     const endpoint = `/api/ads/my/ads${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.request<{ ads: Ad[]; total: number; page: number; limit: number }>(endpoint);
-    return response;
+    return response as { ads: Ad[]; total: number; page: number; limit: number };
   }
 
   private async refreshToken(): Promise<boolean> {
