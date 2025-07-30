@@ -42,8 +42,10 @@ await fastify.register(cors, {
     return cb(new Error('Not allowed by CORS'), false);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
   credentials: true, // Allow cookies and Authorization headers
+  preflightContinue: false, // Handle preflight requests automatically
+  optionsSuccessStatus: 204, // Some legacy browsers (IE11, various SmartTVs) choke on 204
 });
 
 await fastify.register(rateLimit, {
@@ -79,6 +81,11 @@ await fastify.register(swaggerUi, {
     docExpansion: 'full',
     deepLinking: false
   }
+});
+
+// Handle preflight OPTIONS requests globally
+fastify.options('*', async (request, reply) => {
+  return reply.status(204).send();
 });
 
 // Health check route
