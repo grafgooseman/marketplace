@@ -30,44 +30,7 @@ export function AdPageContent({ adId, initialData }: AdPageContentProps) {
           console.log('Client: Fetching ad data for ID:', adId)
           setLoading(true)
           
-          // ISOLATED TEST: Try fetching with unique headers to avoid interference
-          console.log('Client: Testing isolated fetch...')
-          const isolatedResponse = await fetch(`${API_BASE_URL}/api/ads/${adId}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Test-Request': 'isolated-ad-fetch',
-              'Cache-Control': 'no-cache'
-            }
-          })
-          const isolatedData = await isolatedResponse.json()
-          console.log('Client: Isolated fetch response:', isolatedData)
-          console.log('Client: Isolated fetch response text:', JSON.stringify(isolatedData))
-          
-          // DIRECT TEST: Try fetching with a simple fetch call
-          console.log('Client: Testing direct fetch...')
-          const directResponse = await fetch(`${API_BASE_URL}/api/ads/${adId}`)
-          const directData = await directResponse.json()
-          console.log('Client: Direct fetch response:', directData)
-          console.log('Client: Direct fetch ad data:', directData.ad)
-          console.log('Client: Direct fetch ad title:', directData.ad?.title)
-          
-          // TEMPORARY FIX: Use direct fetch data if API client fails
-          if (directData.ad && directData.ad.id) {
-            console.log('Client: Using direct fetch data as fallback')
-            setAd(directData.ad)
-            
-            // Still fetch related ads with API client
-            console.log('Client: Fetching related ads...')
-            const relatedResponse = await apiClient.getAds({ limit: 8 })
-            console.log('Client: getAds response:', relatedResponse)
-            setRelatedAds(relatedResponse.ads.filter(relatedAd => relatedAd.id !== adId))
-            
-            console.log('Client: Data fetched successfully using direct fetch')
-            return // Skip the API client call
-          }
-          
-          console.log('Client: Calling apiClient.getAd...')
+          // Use API client to fetch ad data
           const adData = await apiClient.getAd(adId)
           console.log('Client: getAd response:', adData)
           
@@ -77,7 +40,7 @@ export function AdPageContent({ adId, initialData }: AdPageContentProps) {
           
           setAd(adData)
           
-          console.log('Client: Fetching related ads...')
+          // Fetch related ads
           const relatedResponse = await apiClient.getAds({ limit: 8 })
           console.log('Client: getAds response:', relatedResponse)
           setRelatedAds(relatedResponse.ads.filter(relatedAd => relatedAd.id !== adId))

@@ -1,11 +1,5 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// Debug logging at module level
-console.log('=== API Module Load Debug ===');
-console.log('process.env.NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-console.log('API_BASE_URL constant:', API_BASE_URL);
-console.log('================================');
-
 interface ApiResponse<T = any> {
   data?: T;
   message?: string;
@@ -103,13 +97,6 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    
-    // Debug logging
-    console.log('=== API Request Debug ===');
-    console.log('API_BASE_URL:', this.baseURL);
-    console.log('endpoint:', endpoint);
-    console.log('Full URL:', url);
-    console.log('========================');
     
     const config: RequestInit = {
       method: 'GET', // Default to GET if not specified
