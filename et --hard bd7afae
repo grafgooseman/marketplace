@@ -1,7 +1,0 @@
-[33m23208ac[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m HEAD@{0}: reset: moving to HEAD~1
-[33mbd7afae[m HEAD@{1}: reset: moving to HEAD~1
-[33m7fa5deb[m[33m ([m[1;31morigin/master[m[33m)[m HEAD@{2}: commit: auth works
-[33mbd7afae[m HEAD@{3}: commit: Auth Ui finally polished
-[33m23208ac[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m HEAD@{4}: Branch: renamed refs/heads/master to refs/heads/master
-[33m23208ac[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m HEAD@{6}: commit: Main UI complete
-[33m09441e6[m HEAD@{7}: commit (initial): Initial commit from Create Next App

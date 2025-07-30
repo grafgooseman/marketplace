@@ -26,9 +26,24 @@ const fastify = Fastify({
 });
 
 // Register plugins
+const allowedOrigins = new Set([
+  process.env.FRONTEND_ORIGIN ?? 'https://natural-charm-production.up.railway.app',
+  'http://localhost:3000', // dev frontend
+  'http://localhost:3001', // dev backend (for testing)
+]);
+
 await fastify.register(cors, {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
+  origin(origin, cb) {
+    // Allow requests with no origin (like mobile apps, curl, Postman) and whitelisted origins
+    if (!origin || allowedOrigins.has(origin)) {
+      return cb(null, true);
+    }
+    fastify.log.warn(`CORS blocked origin: ${origin}`);
+    return cb(new Error('Not allowed by CORS'), false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // Allow cookies and Authorization headers
 });
 
 await fastify.register(rateLimit, {
