@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+import { supabase, supabaseAdmin } from '../lib/supabase.js';
 import { authenticateJWT, optionalAuth } from '../middleware/auth.js';
 
 export async function adsRoutes(fastify, options) {
@@ -14,6 +14,7 @@ export async function adsRoutes(fastify, options) {
           price_min: { type: 'number' },
           price_max: { type: 'number' },
           search: { type: 'string' },
+          sort: { type: 'string', enum: ['relevance', 'price-asc', 'price-desc', 'newest', 'oldest'] },
           page: { type: 'integer', minimum: 1, default: 1 },
           limit: { type: 'integer', minimum: 1, maximum: 50, default: 20 }
         }
@@ -33,17 +34,25 @@ export async function adsRoutes(fastify, options) {
     preHandler: optionalAuth
   }, async (request, reply) => {
     try {
-      const { category, price_min, price_max, search, page = 1, limit = 20 } = request.query;
+      const { category, price_min, price_max, search, sort = 'newest', page = 1, limit = 20 } = request.query;
       const offset = (page - 1) * limit;
 
-      let query = supabase
+      // Use admin client to bypass RLS for public ads
+      let query = supabaseAdmin
         .from('ads')
         .select('*', { count: 'exact' });
 
       // Apply filters
-      if (category) {
-        query = query.eq('category', category);
-      }
+      // TODO: Add category column to database first
+      // if (category) {
+      //   // Support both single category and comma-separated multiple categories
+      //   const categories = category.split(',').map(c => c.trim()).filter(c => c);
+      //   if (categories.length === 1) {
+      //     query = query.eq('category', categories[0]);
+      //   } else if (categories.length > 1) {
+      //     query = query.in('category', categories);
+      //   }
+      // }
       if (price_min !== undefined) {
         query = query.gte('price', price_min);
       }
@@ -52,6 +61,24 @@ export async function adsRoutes(fastify, options) {
       }
       if (search) {
         query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      }
+
+      // Apply sorting
+      switch (sort) {
+        case 'price-asc':
+          query = query.order('price', { ascending: true });
+          break;
+        case 'price-desc':
+          query = query.order('price', { ascending: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'newest':
+        default:
+          query = query.order('created_at', { ascending: false });
+          break;
+        // 'relevance' would require more complex logic, defaulting to newest for now
       }
 
       // Add pagination
@@ -98,14 +125,6 @@ export async function adsRoutes(fastify, options) {
         properties: {
           id: { type: 'string' }
         }
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            ad: { type: 'object' }
-          }
-        }
       }
     },
     preHandler: optionalAuth
@@ -113,7 +132,8 @@ export async function adsRoutes(fastify, options) {
     try {
       const { id } = request.params;
 
-      const { data: ad, error } = await supabase
+      // Use admin client to bypass RLS for public ads
+      const { data: ad, error } = await supabaseAdmin
         .from('ads')
         .select('*')
         .eq('id', id)
